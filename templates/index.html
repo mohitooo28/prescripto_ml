@@ -1,0 +1,567 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" type="image/png" href="static\favicon.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <title>Prescripto</title>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        /* Custom style for input container */
+        .input-tag-container {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            padding: 0.25rem 0.5rem;
+            width: 100%;
+            min-height: 48px;
+            gap: 0.5rem;
+        }
+
+        /* Make the input take only needed space */
+        .input-tag {
+            flex: 1;
+            min-width: 120px;
+            background: transparent;
+            outline: none;
+            border: none;
+            padding: 0.5rem 0;
+        }
+
+        /* Dark mode styles */
+        .dark {
+            background-color: #000000;
+            color: #f3f4f6;
+        }
+
+        /* Light theme styles remain original */
+        .light {
+            background-color: #f9fafb;
+            color: #111827;
+        }
+
+        /* Dark mode overrides */
+        .dark .bg-white {
+            background-color: #111827;
+            border-color: #1f2937;
+        }
+
+        .dark .text-gray-800 {
+            color: #f3f4f6;
+        }
+
+        .dark .bg-gray-50 {
+            background-color: #000000;
+        }
+
+        .dark .border-gray-200,
+        .dark .border-gray-300 {
+            border-color: #374151;
+        }
+
+        .dark .bg-blue-600 {
+            background-color: #3b82f6;
+        }
+
+        .dark .hover\:bg-blue-700:hover {
+            background-color: #2563eb;
+        }
+
+        .dark .bg-gray-600 {
+            background-color: #4b5563;
+        }
+
+        .dark .hover\:bg-gray-700:hover {
+            background-color: #374151;
+        }
+
+        .dark .text-blue-600 {
+            color: #60a5fa;
+        }
+
+        /* Search box specific dark mode styles */
+        .dark .input-tag-container {
+            background-color: #111827;
+            border-color: #374151;
+        }
+
+        .dark .input-tag {
+            color: #f3f4f6;
+        }
+
+        .dark .input-tag::placeholder {
+            color: #9ca3af;
+        }
+
+        .dark #symptomsDropdown {
+            background-color: #111827;
+            border-color: #374151;
+        }
+
+        .dark #symptomSearch {
+            background-color: #1f2937;
+            color: #f3f4f6;
+            border-color: #374151;
+        }
+
+        .dark #symptomList li {
+            border-color: #374151;
+            color: #f3f4f6;
+        }
+
+        .dark #symptomList li:hover {
+            background-color: #1f2937;
+        }
+
+        .dark .bg-blue-100 {
+            background-color: #1e40af;
+        }
+
+        .dark .text-blue-800 {
+            color: #bfdbfe;
+        }
+
+        .dark .text-blue-600 {
+            color: #93c5fd;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-50 text-gray-800">
+    <!-- Navbar -->
+    <nav class="bg-blue-600 shadow-md">
+        <div class="container mx-auto px-4">
+            <div class="flex items-center justify-between h-16">
+                <a class="flex items-center font-semibold text-white" href="#">
+                    <img class="h-8 w-8 mx-4" src="{{ url_for('static', filename='logo.svg') }}" alt="Prescripto Logo">
+                    Prescripto
+                </a>
+                <button id="themeToggle" class="p-2 rounded-full focus:outline-none">
+                    <svg id="moonIcon" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none"
+                        viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                    </svg>
+                    <svg id="sunIcon" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white hidden" fill="none"
+                        viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Form -->
+    <div class="container mx-auto my-8 px-4">
+        <div class="bg-white rounded-xl shadow-md p-6 md:p-8">
+            <!-- <h1 class="text-2xl md:text-3xl font-semibold text-blue-600 text-center mb-6">Prescripto.AI</h1> -->
+            <form id="predictionForm" action="/predict" method="post">
+                <div class="mb-6 relative">
+                    <div class="relative">
+                        <!-- Custom container for input and tags -->
+                        <div class="input-tag-container border border-gray-300 rounded-lg focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500"
+                            id="inputContainer" onclick="toggleSymptomsDropdown()">
+                            <!-- Selected symptoms will appear here -->
+                            <div id="selectedSymptomsContainer" class="flex flex-wrap gap-1 items-center"></div>
+                            <!-- Actual input field -->
+                            <input type="text" class="input-tag" id="symptomSelector" placeholder="Select Symptoms">
+                        </div>
+
+                        <!-- Dropdown button -->
+                        <button type="button" class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500"
+                            onclick="toggleSymptomsDropdown()">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+                                class="bi bi-chevron-down" viewBox="0 0 16 16">
+                                <path fill-rule="evenodd"
+                                    d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z" />
+                            </svg>
+                        </button>
+                    </div>
+
+                    <!-- Hidden input to store the actual symptoms value for form submission -->
+                    <input type="hidden" id="symptoms" name="symptoms" value="{{ query if query else '' }}">
+
+                    <!-- Symptoms dropdown -->
+                    <div class="hidden absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-lg max-h-72 overflow-y-auto"
+                        id="symptomsDropdown">
+                        <div class="sticky top-0 bg-white p-2 border-b border-gray-200">
+                            <input type="text" class="w-full p-2 border border-gray-300 rounded-md" id="symptomSearch"
+                                placeholder="Search Symptoms" onkeyup="filterSymptoms()">
+                        </div>
+                        <ul class="symptom-list" id="symptomList">
+                            <!-- Symptoms will be populated by JavaScript -->
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="flex flex-col gap-3">
+                    <button type="submit"
+                        class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg">
+                        Predict
+                    </button>
+                    <button type="button"
+                        class="w-full bg-gray-600 hover:bg-gray-700 text-white font-medium py-3 px-6 rounded-lg"
+                        onclick="clearForm()">
+                        Clear
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Results Section -->
+    {% if predicted_disease %}
+    <div class="container mx-auto my-8 px-4">
+        <div class="bg-white rounded-xl shadow-md p-6 md:p-8">
+            <h2 class="text-2xl font-semibold text-blue-600 text-center mb-6">Prescripto Diagnosis Results</h2>
+
+            <!-- Predicted Disease -->
+            <div class="mb-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-2">Predicted Disease:</h3>
+                <ul>
+                    <li class="bg-gray-50 p-3 rounded-lg border border-gray-200">
+                        {{ predicted_disease }}
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Description -->
+            <div class="mb-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-2">Description:</h3>
+                <ul>
+                    <li class="bg-gray-50 p-3 rounded-lg border border-gray-200">
+                        {{ dis_des }}
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Precautions -->
+            <div class="mb-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-2">Precautions:</h3>
+                <ul class="space-y-2">
+                    {% for i in my_precautions %}
+                    <li class="bg-gray-50 p-3 rounded-lg border border-gray-200">{{ i }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+
+            <!-- Medications -->
+            <div class="mb-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-2">Medications:</h3>
+                <ul class="space-y-2">
+                    {% for med in medications %}
+                    <li class="bg-gray-50 p-3 rounded-lg border border-gray-200">{{ med }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+
+            <!-- Workouts -->
+            <div class="mb-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-2">Workouts:</h3>
+                <ul class="space-y-2">
+                    {% for i in workout %}
+                    <li class="bg-gray-50 p-3 rounded-lg border border-gray-200">{{ i }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+
+            <!-- Diets -->
+            <div class="mb-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-2">Diets:</h3>
+                <ul class="space-y-2">
+                    {% for i in my_diet %}
+                    <li class="bg-gray-50 p-3 rounded-lg border border-gray-200">{{ i }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <script>
+        // Theme toggle functionality
+        const themeToggle = document.getElementById('themeToggle');
+        const moonIcon = document.getElementById('moonIcon');
+        const sunIcon = document.getElementById('sunIcon');
+        const html = document.documentElement;
+
+        // Check for saved theme preference or use light theme as default
+        const currentTheme = localStorage.getItem('theme') || 'light';
+        if (currentTheme === 'dark') {
+            html.classList.add('dark');
+            moonIcon.classList.add('hidden');
+            sunIcon.classList.remove('hidden');
+        }
+
+        themeToggle.addEventListener('click', () => {
+            html.classList.toggle('dark');
+            if (html.classList.contains('dark')) {
+                localStorage.setItem('theme', 'dark');
+                moonIcon.classList.add('hidden');
+                sunIcon.classList.remove('hidden');
+            } else {
+                localStorage.setItem('theme', 'light');
+                moonIcon.classList.remove('hidden');
+                sunIcon.classList.add('hidden');
+            }
+        });
+
+        // Symptoms dictionary
+        const symptoms_dict = {
+            'itching': 0, 'skin_rash': 1, 'nodal_skin_eruptions': 2, 'continuous_sneezing': 3,
+            'shivering': 4, 'chills': 5, 'joint_pain': 6, 'stomach_pain': 7, 'acidity': 8,
+            'ulcers_on_tongue': 9, 'muscle_wasting': 10, 'vomiting': 11, 'burning_micturition': 12,
+            'spotting_ urination': 13, 'fatigue': 14, 'weight_gain': 15, 'anxiety': 16,
+            'cold_hands_and_feets': 17, 'mood_swings': 18, 'weight_loss': 19, 'restlessness': 20,
+            'lethargy': 21, 'patches_in_throat': 22, 'irregular_sugar_level': 23, 'cough': 24,
+            'high_fever': 25, 'sunken_eyes': 26, 'breathlessness': 27, 'sweating': 28,
+            'dehydration': 29, 'indigestion': 30, 'headache': 31, 'yellowish_skin': 32,
+            'dark_urine': 33, 'nausea': 34, 'loss_of_appetite': 35, 'pain_behind_the_eyes': 36,
+            'back_pain': 37, 'constipation': 38, 'abdominal_pain': 39, 'diarrhoea': 40,
+            'mild_fever': 41, 'yellow_urine': 42, 'yellowing_of_eyes': 43, 'acute_liver_failure': 44,
+            'fluid_overload': 45, 'swelling_of_stomach': 46, 'swelled_lymph_nodes': 47, 'malaise': 48,
+            'blurred_and_distorted_vision': 49, 'phlegm': 50, 'throat_irritation': 51,
+            'redness_of_eyes': 52, 'sinus_pressure': 53, 'runny_nose': 54, 'congestion': 55,
+            'chest_pain': 56, 'weakness_in_limbs': 57, 'fast_heart_rate': 58,
+            'pain_during_bowel_movements': 59, 'pain_in_anal_region': 60, 'bloody_stool': 61,
+            'irritation_in_anus': 62, 'neck_pain': 63, 'dizziness': 64, 'cramps': 65,
+            'bruising': 66, 'obesity': 67, 'swollen_legs': 68, 'swollen_blood_vessels': 69,
+            'puffy_face_and_eyes': 70, 'enlarged_thyroid': 71, 'brittle_nails': 72,
+            'swollen_extremeties': 73, 'excessive_hunger': 74, 'extra_marital_contacts': 75,
+            'drying_and_tingling_lips': 76, 'slurred_speech': 77, 'knee_pain': 78,
+            'hip_joint_pain': 79, 'muscle_weakness': 80, 'stiff_neck': 81, 'swelling_joints': 82,
+            'movement_stiffness': 83, 'spinning_movements': 84, 'loss_of_balance': 85,
+            'unsteadiness': 86, 'weakness_of_one_body_side': 87, 'loss_of_smell': 88,
+            'bladder_discomfort': 89, 'foul_smell_of urine': 90, 'continuous_feel_of_urine': 91,
+            'passage_of_gases': 92, 'internal_itching': 93, 'toxic_look_(typhos)': 94,
+            'depression': 95, 'irritability': 96, 'muscle_pain': 97, 'altered_sensorium': 98,
+            'red_spots_over_body': 99, 'belly_pain': 100, 'abnormal_menstruation': 101,
+            'dischromic _patches': 102, 'watering_from_eyes': 103, 'increased_appetite': 104,
+            'polyuria': 105, 'family_history': 106, 'mucoid_sputum': 107, 'rusty_sputum': 108,
+            'lack_of_concentration': 109, 'visual_disturbances': 110, 'receiving_blood_transfusion': 111,
+            'receiving_unsterile_injections': 112, 'coma': 113, 'stomach_bleeding': 114,
+            'distention_of_abdomen': 115, 'history_of_alcohol_consumption': 116, 'fluid_overload.1': 117,
+            'blood_in_sputum': 118, 'prominent_veins_on_calf': 119, 'palpitations': 120,
+            'painful_walking': 121, 'pus_filled_pimples': 122, 'blackheads': 123, 'scurring': 124,
+            'skin_peeling': 125, 'silver_like_dusting': 126, 'small_dents_in_nails': 127,
+            'inflammatory_nails': 128, 'blister': 129, 'red_sore_around_nose': 130, 'yellow_crust_ooze': 131
+        };
+
+        // Format symptom names for display
+        function formatSymptomName(name) {
+            return name.replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase());
+        }
+
+        // Array to store selected symptoms
+        let selectedSymptoms = [];
+
+        // Initialize the symptom list
+        function initSymptomList() {
+            const symptomList = document.getElementById('symptomList');
+            symptomList.innerHTML = '';
+
+            Object.keys(symptoms_dict).sort().forEach(symptom => {
+                const li = document.createElement('li');
+                li.className = 'px-4 py-2 hover:bg-gray-100 cursor-pointer border-b border-gray-100 dark:hover:bg-gray-300 dark:hover:text-black dark:border-gray-600 dark:text-black ';
+                li.textContent = formatSymptomName(symptom);
+                li.dataset.value = symptom;
+                li.onclick = function () {
+                    toggleSymptomSelection(symptom);
+                    updateSelectedSymptomsDisplay();
+                    updateHiddenInput();
+                    // Focus back to input
+                    document.getElementById('symptomSelector').focus();
+                };
+                symptomList.appendChild(li);
+            });
+
+            // Initialize from URL if there's a query
+            const query = "{{ query if query else '' }}";
+            if (query) {
+                const symptoms = query.split(',').map(s => s.trim());
+                symptoms.forEach(symptom => {
+                    if (Object.keys(symptoms_dict).includes(symptom)) {
+                        selectedSymptoms.push(symptom);
+                    }
+                });
+                updateSelectedSymptomsDisplay();
+                updateHiddenInput();
+            }
+        }
+
+        // Toggle the symptoms dropdown
+        function toggleSymptomsDropdown() {
+            const dropdown = document.getElementById('symptomsDropdown');
+
+            if (dropdown.classList.contains('hidden')) {
+                dropdown.classList.remove('hidden');
+                document.getElementById('symptomSearch').focus();
+                document.getElementById('symptomSearch').value = document.getElementById('symptomSelector').value;
+                filterSymptoms();
+                highlightSelectedSymptoms();
+            } else {
+                dropdown.classList.add('hidden');
+            }
+        }
+
+        // Filter symptoms based on search input
+        function filterSymptoms() {
+            const searchText = document.getElementById('symptomSearch').value.toLowerCase();
+            const items = document.querySelectorAll('#symptomList li');
+
+            items.forEach(item => {
+                const symptomText = item.textContent.toLowerCase();
+                if (symptomText.includes(searchText)) {
+                    item.classList.remove('hidden');
+                } else {
+                    item.classList.add('hidden');
+                }
+            });
+        }
+
+        // Toggle symptom selection
+        function toggleSymptomSelection(symptom) {
+            const index = selectedSymptoms.indexOf(symptom);
+
+            if (index === -1) {
+                selectedSymptoms.push(symptom);
+            } else {
+                selectedSymptoms.splice(index, 1);
+            }
+
+            highlightSelectedSymptoms();
+
+            // Clear the search input after selection
+            document.getElementById('symptomSelector').value = '';
+            document.getElementById('symptomSearch').value = '';
+
+            // Update placeholder visibility based on whether there are selected symptoms
+            updatePlaceholderVisibility();
+        }
+
+        // Highlight selected symptoms in the dropdown
+        function highlightSelectedSymptoms() {
+            const items = document.querySelectorAll('#symptomList li');
+
+            items.forEach(item => {
+                const symptom = item.dataset.value;
+                if (selectedSymptoms.includes(symptom)) {
+                    item.classList.add('font-semibold', 'bg-blue-50', 'dark:bg-blue-900', "dark:text-white");
+                } else {
+                    item.classList.remove('font-semibold', 'bg-blue-50', 'dark:bg-blue-900', "dark:text-white");
+                }
+            });
+        }
+
+        // Update the display of selected symptoms
+        function updateSelectedSymptomsDisplay() {
+            const container = document.getElementById('selectedSymptomsContainer');
+            container.innerHTML = '';
+
+            selectedSymptoms.forEach(symptom => {
+                const span = document.createElement('span');
+                span.className = 'bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs flex items-center dark:bg-blue-900 dark:text-blue-200';
+                span.innerHTML = `${formatSymptomName(symptom)} <button type="button" class="ml-1 text-blue-600 font-bold leading-none dark:text-blue-300" onclick="removeSymptom(event, '${symptom}')">&times;</button>`;
+                container.appendChild(span);
+            });
+
+            // Update placeholder visibility
+            updatePlaceholderVisibility();
+        }
+
+        // Update placeholder visibility based on selected symptoms
+        function updatePlaceholderVisibility() {
+            const input = document.getElementById('symptomSelector');
+            if (selectedSymptoms.length > 0) {
+                // Remove placeholder when there are selected symptoms
+                input.placeholder = '';
+            } else {
+                // Restore placeholder when there are no selected symptoms
+                input.placeholder = 'Search symptoms...';
+            }
+        }
+
+        // Remove a symptom from selection
+        function removeSymptom(event, symptom) {
+            event.stopPropagation(); // Prevent dropdown from opening when removing a tag
+
+            const index = selectedSymptoms.indexOf(symptom);
+            if (index !== -1) {
+                selectedSymptoms.splice(index, 1);
+                updateSelectedSymptomsDisplay();
+                updateHiddenInput();
+                highlightSelectedSymptoms();
+            }
+        }
+
+        // Update the hidden input with selected symptoms for form submission
+        function updateHiddenInput() {
+            document.getElementById('symptoms').value = selectedSymptoms.join(', ');
+        }
+
+        // Clear the form
+        function clearForm() {
+            selectedSymptoms = [];
+            updateSelectedSymptomsDisplay();
+            updateHiddenInput();
+            document.getElementById('symptomSelector').value = '';
+            window.location.href = '/';
+        }
+
+        // Form validation
+        document.getElementById('predictionForm').addEventListener('submit', function (event) {
+            if (selectedSymptoms.length === 0) {
+                alert('Please select at least one symptom before predicting.');
+                event.preventDefault(); // Prevent form submission
+            }
+        });
+
+        // Handle input in search box
+        document.getElementById('symptomSelector').addEventListener('input', function (event) {
+            const searchText = event.target.value;
+            if (searchText.trim() !== '') {
+                const dropdown = document.getElementById('symptomsDropdown');
+                if (dropdown.classList.contains('hidden')) {
+                    toggleSymptomsDropdown();
+                }
+                document.getElementById('symptomSearch').value = searchText;
+                filterSymptoms();
+            }
+        });
+
+        // Initialize on document load
+        document.addEventListener('DOMContentLoaded', function () {
+            initSymptomList();
+
+            // Focus on input when clicking the container
+            document.getElementById('inputContainer').addEventListener('click', function (event) {
+                if (event.target === this || event.target.id === 'selectedSymptomsContainer') {
+                    document.getElementById('symptomSelector').focus();
+                }
+            });
+
+            // Close dropdown if clicking outside
+            document.addEventListener('click', function (event) {
+                const dropdown = document.getElementById('symptomsDropdown');
+                const inputContainer = document.getElementById('inputContainer');
+                const selector = document.getElementById('symptomSelector');
+
+                if (!dropdown.classList.contains('hidden') &&
+                    !dropdown.contains(event.target) &&
+                    !inputContainer.contains(event.target)) {
+                    dropdown.classList.add('hidden');
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>
